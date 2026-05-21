@@ -1,0 +1,110 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Предпросмотр этикеток{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white !important; }
+    .label-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 4mm !important; }
+    .label-card { border: 1px solid #000 !important; page-break-inside: avoid; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="no-print flex items-center justify-between mb-6">
+  <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-3xl text-indigo-500">label</span>
+    <h1 class="text-2xl font-bold">Предпросмотр этикеток</h1>
+    <span class="cg-badge cg-badge-indigo">{{ items|length }} шт.</span>
+  </div>
+  <div class="flex gap-3">
+    <button onclick="window.print()"
+      class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">
+      <span class="material-symbols-outlined text-lg">print</span>
+      Печать
+    </button>
+    <a href="#" onclick="history.back(); return false;"
+      class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+      Назад
+    </a>
+  </div>
+</div>
+
+<div class="label-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for item in items %}
+  <div class="label-card rounded-xl border-2 border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-3">
+      <div class="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+        Ýyldyrym Cargo
+      </div>
+      <span class="cg-code text-base font-bold">{{ item.item_code }}</span>
+    </div>
+
+    <!-- Client info -->
+    <div class="space-y-1 mb-3">
+      <div class="flex gap-2 text-sm">
+        <span class="text-gray-500 w-16 shrink-0">Клиент:</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ item.client.full_name }}</span>
+      </div>
+      <div class="flex gap-2 text-sm">
+        <span class="text-gray-500 w-16 shrink-0">Код:</span>
+        <span class="font-mono text-gray-700 dark:text-gray-300">{{ item.client.client_code }}</span>
+      </div>
+      <div class="flex gap-2 text-sm">
+        <span class="text-gray-500 w-16 shrink-0">Телефон:</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ item.client.phone_number }}</span>
+      </div>
+    </div>
+
+    <!-- Route & measurements -->
+    <div class="grid grid-cols-2 gap-2 mb-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+      <div class="text-center">
+        <div class="text-xs text-gray-500 uppercase tracking-wide">Направление</div>
+        <div class="font-bold text-gray-900 dark:text-gray-100">{{ item.destination.code }}</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-gray-500 uppercase tracking-wide">Склад</div>
+        <div class="font-bold text-gray-900 dark:text-gray-100">{{ item.warehouse.code }}</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-gray-500 uppercase tracking-wide">Вес</div>
+        <div class="font-bold text-gray-900 dark:text-gray-100">{{ item.weight_kg }} кг</div>
+      </div>
+      <div class="text-center">
+        <div class="text-xs text-gray-500 uppercase tracking-wide">Объём</div>
+        <div class="font-bold text-gray-900 dark:text-gray-100">{{ item.volume_m3 }} м³</div>
+      </div>
+    </div>
+
+    <!-- Codes for scanner -->
+    {% if item.barcode %}
+    <div class="mb-2">
+      <div class="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Штрихкод</div>
+      <div class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 break-all">{{ item.barcode }}</div>
+    </div>
+    {% endif %}
+    {% if item.qr_code %}
+    <div class="mb-2">
+      <div class="text-xs text-gray-500 uppercase tracking-wide mb-0.5">QR код</div>
+      <div class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 break-all">{{ item.qr_code }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2 flex items-center justify-between">
+      <span class="text-xs text-gray-400">{{ item.created_at|date:"d.m.Y" }}</span>
+      <span class="cg-badge cg-badge-blue text-xs">{{ item.get_delivery_status_display }}</span>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-span-3 text-center text-gray-500 py-12">Грузы не выбраны.</div>
+  {% endfor %}
+</div>
+{% endblock %}

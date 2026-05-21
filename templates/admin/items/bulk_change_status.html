@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Изменить статус грузов{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-3 mb-6">
+  <span class="material-symbols-outlined text-3xl text-orange-500">swap_horiz</span>
+  <h1 class="text-2xl font-bold">Изменить статус грузов</h1>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {% for item in items %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ item.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="action_change_status">
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Selected items -->
+    <div class="lg:col-span-2">
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <span class="font-semibold text-sm uppercase tracking-wide text-gray-600 dark:text-gray-400">
+            Выбранные грузы ({{ items|length }})
+          </span>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Код груза</th>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Клиент</th>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Текущий статус</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            {% for item in items %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2"><span class="cg-code">{{ item.item_code }}</span></td>
+              <td class="px-4 py-2 text-gray-700 dark:text-gray-300">{{ item.client.full_name }}</td>
+              <td class="px-4 py-2">
+                <span class="cg-badge cg-badge-gray text-xs">{{ item.get_delivery_status_display }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Status form -->
+    <div>
+      <div class="rounded-xl border border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/30 p-5">
+        <h3 class="font-semibold text-orange-800 dark:text-orange-300 mb-4">Новый статус</h3>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Статус доставки
+          </label>
+          <select name="new_status"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+            <option value="">— Выберите статус —</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Комментарий
+          </label>
+          <textarea name="comment" rows="3"
+            placeholder="Причина изменения статуса..."
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"></textarea>
+        </div>
+
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          Грузы, для которых переход недопустим по логике состояний, будут пропущены с предупреждением.
+        </p>
+
+        <div class="flex gap-3">
+          <button type="submit" name="apply" value="1"
+            class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+            Применить
+          </button>
+          <a href="#" onclick="history.back(); return false;"
+            class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            Отмена
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

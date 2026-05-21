@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(foreach \\($app in @\\('accounts','audit','clients','common','dashboard','items','locations','payments','pricing','shipments'\\)\\) { Write-Host \"=== $app ===\"; Get-ChildItem \"D:\\\\Projects\\\\Cargo\\\\Warehouse\\\\backend_django\\\\apps\\\\$app\" -Name })",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"D:\\\\Projects\\\\Cargo\\\\Warehouse\\\\backend_django\\\\locale\\\\ru\\\\LC_MESSAGES\")",
+      "Bash(cd /d \"D:\\\\Projects\\\\Cargo\\\\Warehouse\\\\backend_django\")",
+      "Bash(docker-compose restart *)",
+      "Bash(docker compose *)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(copy \"webfetch-1779099077197-ytg9mp.bin\" \"design.tar.gz\")",
+      "Bash(tar -xzf design.tar.gz)",
+      "Bash(gzip -d design.tar.gz)",
+      "Bash(cp C:/Users/sweet/.claude/projects/D--Projects-Cargo-Warehouse-backend-django/9fa28edf-3187-4ee6-885e-feab562dadcc/tool-results/webfetch-1779099077197-ytg9mp.bin /tmp/design.gz)",
+      "Bash(gzip -d /tmp/design.gz)",
+      "Read(//d/tmp/**)",
+      "Read(//tmp/**)",
+      "Bash(tar -xf design)",
+      "Bash(tar -xf /tmp/design)",
+      "Bash(gradlew.bat :app:compileDebugKotlin)",
+      "Read(//mnt/d/Projects/Cargo/**)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; cd \"D:\\\\Projects\\\\Cargo\\\\android_app\"; .\\\\gradlew.bat :app:compileDebugKotlin 2>&1 | Select-Object -Last 80)",
+      "Bash(ls \"/c/Program Files/Android/Android Studio/\" 2>/dev/null || ls \"/c/Program Files/Android/\" 2>/dev/null | head -20)",
+      "Bash(find \"/c/Users\" -name \"java.exe\" -path \"*jdk*17*\" 2>/dev/null | head -5; ls \"/c/Users/$USER/.gradle/jdks/\" 2>/dev/null | head -10)",
+      "PowerShell(\"---\")",
+      "Bash(\"C:/Users/sweet/.jdks/jbr-17.0.14/bin/java.exe\" -version)",
+      "Bash(JAVA_HOME=C:/Users/sweet/.jdks/jbr-17.0.14 ANDROID_HOME=C:/Users/sweet/AppData/Local/Android/Sdk ANDROID_SDK_ROOT=C:/Users/sweet/AppData/Local/Android/Sdk ./gradlew --no-daemon --console=plain assembleDebug)",
+      "Bash(JAVA_HOME=C:/Users/sweet/.jdks/jbr-17.0.14 ANDROID_HOME=C:/Users/sweet/AppData/Local/Android/Sdk ANDROID_SDK_ROOT=C:/Users/sweet/AppData/Local/Android/Sdk ./gradlew --no-daemon --console=plain compileDebugKotlin)",
+      "Bash(find \"C:/Users/sweet/.claude/projects\" -type f -newer \"D:/Projects/Cargo/android_app/app/build/outputs/apk/debug/app-debug.apk\" \\\\\\( -name \"*.png\" -o -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.webp\" \\\\\\) 2>/dev/null | head -20 *)",
+      "Bash(python -c ' *)",
+      "PowerShell(D:\\\\Projects\\\\Cargo\\\\Warehouse\\\\backend_django\\\\venv\\\\Scripts\\\\python.exe D:\\\\Projects\\\\Cargo\\\\Warehouse\\\\backend_django\\\\manage.py makemigrations items)"
+    ]
+  }
+}

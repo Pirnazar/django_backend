@@ -1,0 +1,438 @@
+{% extends 'admin/base.html' %}
+{% load i18n static %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block title %}Панель управления | {{ site_title|default:"Cargo Admin" }}{% endblock %}
+
+{% block content %}
+{# ── CDN libs ─────────────────────────────────────────────────────────────── #}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    corePlugins: { preflight: false },
+  }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+{# ── JS runtime config ────────────────────────────────────────────────────── #}
+<script>
+  window.DASH_CONFIG = {
+    hasFinance: {{ has_finance|yesno:"true,false" }},
+    apiBase: '/admin/dashboard/api/',
+    pollInterval: 30000,
+  };
+</script>
+
+<div id="cg-dashboard" class="font-sans pb-10">
+
+  {# ── Status bar ─────────────────────────────────────────────────────────── #}
+  <div class="flex items-center justify-between mb-5">
+    <h1 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Панель управления</h1>
+    <div class="flex items-center gap-3">
+      <span id="dash-updated" class="text-xs text-gray-400 dark:text-gray-500"></span>
+      <div id="dash-spinner" class="hidden w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div id="dash-error-badge" class="hidden text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+        ⚠ Ошибка обновления
+      </div>
+      <button id="btn-refresh"
+        class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+        Обновить
+      </button>
+    </div>
+  </div>
+
+  {# ── KPI Cards — base (always visible) ─────────────────────────────────── #}
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+
+    <div class="cg-card" id="card-total-clients">
+      <div class="cg-card-icon bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+        <span class="material-symbols-outlined">group</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Всего клиентов</div>
+        <div class="cg-card-value" data-key="total_clients">{{ cards.total_clients|default:"—" }}</div>
+      </div>
+    </div>
+
+    <div class="cg-card" id="card-active-clients">
+      <div class="cg-card-icon bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+        <span class="material-symbols-outlined">person_check</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Активных клиентов</div>
+        <div class="cg-card-value" data-key="active_clients">{{ cards.active_clients|default:"—" }}</div>
+      </div>
+    </div>
+
+    <div class="cg-card" id="card-total-items">
+      <div class="cg-card-icon bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+        <span class="material-symbols-outlined">inventory_2</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Всего грузов</div>
+        <div class="cg-card-value" data-key="total_items">{{ cards.total_items|default:"—" }}</div>
+      </div>
+    </div>
+
+    <div class="cg-card" id="card-china-items">
+      <div class="cg-card-icon bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+        <span class="material-symbols-outlined">warehouse</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Склад (Китай)</div>
+        <div class="cg-card-value" data-key="items_china">{{ cards.items_china|default:"—" }}</div>
+      </div>
+    </div>
+
+    <div class="cg-card" id="card-unpaid-items">
+      <div class="cg-card-icon bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Неоплаченные</div>
+        <div class="cg-card-value" data-key="items_unpaid">{{ cards.items_unpaid|default:"—" }}</div>
+      </div>
+    </div>
+
+    <div class="cg-card" id="card-transit-groups">
+      <div class="cg-card-icon bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+        <span class="material-symbols-outlined">local_shipping</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Партии в пути</div>
+        <div class="cg-card-value" data-key="transit_groups">{{ cards.transit_groups|default:"—" }}</div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── KPI Cards — role-specific row ─────────────────────────────────────── #}
+  {% if has_finance %}
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="cg-card cg-card-finance" id="card-monthly-income">
+      <div class="cg-card-icon bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+        <span class="material-symbols-outlined">trending_up</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Доход (месяц)</div>
+        <div class="cg-card-value text-emerald-600 dark:text-emerald-400" data-key="monthly_income" data-format="money">
+          {{ cards.monthly_income|default:"0.00" }} $
+        </div>
+      </div>
+    </div>
+    <div class="cg-card cg-card-finance" id="card-monthly-expenses">
+      <div class="cg-card-icon bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+        <span class="material-symbols-outlined">trending_down</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Расходы (месяц)</div>
+        <div class="cg-card-value text-rose-600 dark:text-rose-400" data-key="monthly_expenses" data-format="money">
+          {{ cards.monthly_expenses|default:"0.00" }} $
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="cg-card" id="card-items-today">
+      <div class="cg-card-icon bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+        <span class="material-symbols-outlined">today</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Грузов сегодня</div>
+        <div class="cg-card-value" data-key="items_today">{{ operational.items_today|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="cg-card" id="card-awaiting-photo">
+      <div class="cg-card-icon bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+        <span class="material-symbols-outlined">photo_camera</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Ожидают фото</div>
+        <div class="cg-card-value" data-key="awaiting_photo">{{ operational.awaiting_photo|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="cg-card" id="card-awaiting-pack">
+      <div class="cg-card-icon bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+        <span class="material-symbols-outlined">inventory</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Ожидают упаковки</div>
+        <div class="cg-card-value" data-key="awaiting_pack">{{ operational.awaiting_pack|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="cg-card" id="card-awaiting-group">
+      <div class="cg-card-icon bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400">
+        <span class="material-symbols-outlined">add_box</span>
+      </div>
+      <div class="cg-card-body">
+        <div class="cg-card-label">Ожидают партии</div>
+        <div class="cg-card-value" data-key="awaiting_group">{{ operational.awaiting_group|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Charts Row 1 ───────────────────────────────────────────────────────── #}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+
+    {# Doughnut: Грузы по статусам #}
+    <div class="cg-chart-card">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Грузы по статусам</h3>
+      </div>
+      <div class="relative h-52">
+        <canvas id="chartItemsStatus"></canvas>
+      </div>
+    </div>
+
+    {# Doughnut: Платежи по статусам #}
+    <div class="cg-chart-card">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Статусы оплаты</h3>
+      </div>
+      <div class="relative h-52">
+        <canvas id="chartPaymentsStatus"></canvas>
+      </div>
+    </div>
+
+    {# Bar: Revenue (finance) / Operational placeholder (non-finance) #}
+    {% if has_finance %}
+    <div class="cg-chart-card" id="panel-revenue">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Доход и расходы (месяц)</h3>
+      </div>
+      <div class="relative h-52">
+        <canvas id="chartRevenue"></canvas>
+      </div>
+    </div>
+    {% else %}
+    <div class="cg-chart-card">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Частично оплачено</h3>
+      </div>
+      <div class="flex flex-col items-center justify-center h-52 gap-2">
+        <span class="text-4xl font-bold text-amber-500" data-key="items_partial">{{ cards.items_partial|default:"0" }}</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">грузов с частичной оплатой</span>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# ── Charts Row 2 ───────────────────────────────────────────────────────── #}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+    {# Line: Новые грузы по дням #}
+    <div class="cg-chart-card">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Новые грузы (30 дней)</h3>
+      </div>
+      <div class="relative h-52">
+        <canvas id="chartItemsByDay"></canvas>
+      </div>
+    </div>
+
+    {# Bar: По направлениям #}
+    <div class="cg-chart-card">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Грузы по направлениям</h3>
+      </div>
+      <div class="relative h-52">
+        <canvas id="chartByDestination"></canvas>
+      </div>
+    </div>
+
+    {# Bar: По складам #}
+    <div class="cg-chart-card">
+      <div class="cg-chart-header">
+        <h3 class="cg-chart-title">Грузы по складам</h3>
+      </div>
+      <div class="relative h-52">
+        <canvas id="chartByWarehouse"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Recent Tables ──────────────────────────────────────────────────────── #}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    {# Recent Items #}
+    <div class="cg-table-card">
+      <div class="cg-table-header">
+        <span class="cg-table-title">Последние грузы</span>
+        <a href="/admin/items/item/" class="cg-table-link">Смотреть все</a>
+      </div>
+      <table class="cg-table">
+        <thead>
+          <tr>
+            <th>Код</th><th>Клиент</th><th>Статус</th><th class="text-right">Дата</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-recent-items">
+          {% for i in recent_items %}
+          <tr>
+            <td><a href="{{ i.admin_url }}" class="cg-code">{{ i.item_code }}</a></td>
+            <td class="truncate max-w-[80px]">{{ i.client_name }}</td>
+            <td><span class="cg-status-badge cg-status-{{ i.delivery_status }}">{{ i.delivery_status_display|truncatechars:12 }}</span></td>
+            <td class="text-right text-gray-500">{{ i.created_at }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="cg-empty">Нет грузов</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Recent Payments #}
+    <div class="cg-table-card">
+      <div class="cg-table-header">
+        <span class="cg-table-title">Последние платежи</span>
+        <a href="/admin/payments/paymenttransaction/" class="cg-table-link">Смотреть все</a>
+      </div>
+      <table class="cg-table">
+        <thead>
+          <tr>
+            <th>Клиент</th><th>Сумма</th><th>Статус</th><th class="text-right">Дата</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-recent-payments">
+          {% for p in recent_payments %}
+          <tr>
+            <td class="truncate max-w-[80px]">{{ p.client_name }}</td>
+            <td class="font-medium">{{ p.amount }} {{ p.currency }}</td>
+            <td><span class="cg-status-badge cg-pay-{{ p.status }}">{{ p.status_display }}</span></td>
+            <td class="text-right text-gray-500">{{ p.created_at }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="cg-empty">Нет платежей</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Recent Activity #}
+    <div class="cg-table-card">
+      <div class="cg-table-header">
+        <span class="cg-table-title">Журнал действий</span>
+        <a href="/admin/audit/auditlog/" class="cg-table-link">Смотреть все</a>
+      </div>
+      <table class="cg-table">
+        <thead>
+          <tr>
+            <th>Действие</th><th>Объект</th><th>Кто</th><th class="text-right">Время</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-recent-activity">
+          {% for l in recent_logs %}
+          <tr>
+            <td>
+              {% if l.action == 'CREATE' %}<span class="text-green-600 dark:text-green-400 font-medium">Создан</span>
+              {% elif l.action == 'UPDATE' %}<span class="text-amber-600 dark:text-amber-400 font-medium">Изменён</span>
+              {% else %}<span class="text-red-600 dark:text-red-400 font-medium">Удалён</span>{% endif %}
+            </td>
+            <td class="truncate max-w-[70px]">{{ l.entity_type }} #{{ l.entity_id }}</td>
+            <td class="truncate max-w-[60px]">{{ l.actor }}</td>
+            <td class="text-right text-gray-500">{{ l.created_at }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="cg-empty">Нет действий</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>{# end recent tables #}
+
+</div>{# end #cg-dashboard #}
+
+{# ── Inline styles for dashboard-only elements ──────────────────────────── #}
+<style>
+  .cg-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+  }
+  .dark .cg-card { background: #1f2937; border-color: #374151; }
+  .cg-card-finance { min-height: 72px; }
+  .cg-card-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .cg-card-label { font-size: 11px; color: #64748B; font-weight: 500; margin-bottom: 2px; }
+  .dark .cg-card-label { color: #94A3B8; }
+  .cg-card-value { font-size: 22px; font-weight: 700; color: #0F172A; line-height: 1.2; }
+  .dark .cg-card-value { color: #F1F5F9; }
+
+  .cg-chart-card {
+    background: white; border-radius: 12px;
+    border: 1px solid #F1F5F9; box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 16px;
+  }
+  .dark .cg-chart-card { background: #1f2937; border-color: #374151; }
+  .cg-chart-header { margin-bottom: 10px; }
+  .cg-chart-title { font-size: 13px; font-weight: 600; color: #1E293B; }
+  .dark .cg-chart-title { color: #E2E8F0; }
+
+  .cg-table-card {
+    background: white; border-radius: 12px;
+    border: 1px solid #F1F5F9; box-shadow: 0 1px 3px rgba(0,0,0,.06); overflow: hidden;
+  }
+  .dark .cg-table-card { background: #1f2937; border-color: #374151; }
+  .cg-table-header {
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .dark .cg-table-header { border-color: #374151; }
+  .cg-table-title { font-size: 13px; font-weight: 600; color: #1E293B; }
+  .dark .cg-table-title { color: #E2E8F0; }
+  .cg-table-link {
+    font-size: 11px; color: #64748B; background: #F8FAFC; padding: 3px 10px;
+    border-radius: 6px; border: 1px solid #E2E8F0; text-decoration: none; transition: all .15s;
+  }
+  .cg-table-link:hover { background: #2563EB; color: white; border-color: #2563EB; }
+  .dark .cg-table-link { background: #374151; color: #94A3B8; border-color: #4B5563; }
+  .dark .cg-table-link:hover { background: #2563EB; color: white; }
+  .cg-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+  .cg-table thead tr { border-bottom: 1px solid #F1F5F9; }
+  .dark .cg-table thead tr { border-color: #374151; }
+  .cg-table th { padding: 8px 12px; text-align: left; color: #94A3B8; font-weight: 500; font-size: 11px; }
+  .cg-table td { padding: 9px 12px; color: #374151; border-bottom: 1px solid #F8FAFC; }
+  .dark .cg-table td { color: #CBD5E1; border-color: #374151; }
+  .cg-table tbody tr:hover { background: rgba(37,99,235,.04); }
+  .dark .cg-table tbody tr:hover { background: rgba(59,130,246,.06); }
+  .cg-table tbody tr:last-child td { border-bottom: none; }
+  .cg-empty { text-align: center; color: #94A3B8; padding: 20px 12px !important; font-size: 12px; }
+
+  /* Status badges for tables */
+  .cg-status-badge {
+    display: inline-block; font-size: 10px; padding: 1px 7px;
+    border-radius: 4px; font-weight: 500; white-space: nowrap;
+  }
+  .cg-status-created,.cg-status-measured,.cg-status-photographed,
+  .cg-status-labeled,.cg-status-packed,.cg-status-grouped
+    { background:#DBEAFE; color:#1D4ED8; }
+  .cg-status-at_china_warehouse { background:#E0F2FE; color:#0369A1; }
+  .cg-status-sent_to_urumqi,.cg-status-arrived_urumqi { background:#CCFBF1; color:#0F766E; }
+  .cg-status-sent_to_turkmenistan,.cg-status-arrived_turkmenistan { background:#FEF3C7; color:#B45309; }
+  .cg-status-out_for_delivery,.cg-status-delivered { background:#DCFCE7; color:#15803D; }
+  .cg-status-cancelled { background:#FEE2E2; color:#B91C1C; }
+  .dark .cg-status-badge { opacity: .9; }
+  .cg-pay-completed { background:#DCFCE7; color:#15803D; }
+  .cg-pay-pending   { background:#FEF3C7; color:#B45309; }
+  .cg-pay-failed,.cg-pay-cancelled { background:#FEE2E2; color:#B91C1C; }
+</style>
+
+{# ── Load dashboard JS ───────────────────────────────────────────────────── #}
+<script src="{% static 'js/admin_dashboard.js' %}"></script>
+
+{% endblock %}

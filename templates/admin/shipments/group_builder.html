@@ -1,0 +1,205 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Конструктор партии{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  #builder-items-table tr.selected { background: rgba(37,99,235,0.06); }
+  .dark #builder-items-table tr.selected { background: rgba(59,130,246,0.10); }
+  #summary-card { position: sticky; top: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-3 mb-6">
+  <span class="material-symbols-outlined text-3xl text-blue-600">build_circle</span>
+  <div>
+    <h1 class="text-2xl font-bold leading-tight">Конструктор партии</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400">Быстрое создание партии из грузов без партии</p>
+  </div>
+</div>
+
+<div class="flex gap-6 items-start">
+
+  <!-- ── Left column ─────────────────────────────────────────── -->
+  <div class="flex-1 min-w-0">
+
+    <!-- Step 1: Filters -->
+    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-4 bg-white dark:bg-gray-900">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-4">
+        Шаг 1 — Выберите направление и склад
+      </h2>
+      <div class="flex flex-wrap gap-4">
+        <div class="flex-1 min-w-40">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Направление</label>
+          <select id="sel-destination"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">— Выберите —</option>
+            {% for d in destinations %}
+            <option value="{{ d.pk }}">{{ d.code }} — {{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex-1 min-w-40">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Склад</label>
+          <select id="sel-warehouse"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">— Выберите —</option>
+            {% for w in warehouses %}
+            <option value="{{ w.pk }}">{{ w.code }} — {{ w.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button id="btn-load-items"
+            class="h-[38px] bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-lg transition-colors disabled:opacity-50"
+            disabled>
+            Показать грузы
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Items table -->
+    <div id="items-section" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden hidden mb-4">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <span class="font-semibold text-sm uppercase tracking-wide text-gray-600 dark:text-gray-400">
+          Шаг 2 — Выберите грузы
+          <span id="items-count-badge" class="ml-2 cg-badge cg-badge-blue"></span>
+        </span>
+        <div class="flex items-center gap-3">
+          <input id="search-items" type="text" placeholder="Поиск по коду, клиенту..."
+            class="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 w-52">
+          <button id="btn-select-all"
+            class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+            Выбрать все
+          </button>
+          <button id="btn-clear-all"
+            class="text-sm text-gray-500 hover:underline">
+            Снять все
+          </button>
+        </div>
+      </div>
+
+      <div id="items-loader" class="hidden px-4 py-8 text-center text-gray-500">
+        <div class="animate-spin inline-block w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+        <div class="text-sm">Загрузка грузов...</div>
+      </div>
+
+      <div id="items-empty" class="hidden px-4 py-8 text-center text-gray-400 text-sm">
+        Грузов без партии по выбранному направлению/складу не найдено.
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="builder-items-table">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="px-3 py-2 w-8"><input type="checkbox" id="chk-all" class="rounded"></th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Код груза</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Клиент</th>
+              <th class="px-3 py-2 text-right font-medium text-gray-600 dark:text-gray-400">Вес</th>
+              <th class="px-3 py-2 text-right font-medium text-gray-600 dark:text-gray-400">Объём</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Оплата</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Статус</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Дата</th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- ── Right column: summary + form ──────────────────────── -->
+  <div id="summary-card" class="w-80 shrink-0">
+
+    <!-- Summary -->
+    <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 p-5 mb-4">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 mb-4">
+        Шаг 3 — Итого выбрано
+      </h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-600 dark:text-gray-400">Грузов:</span>
+          <span id="sum-count" class="font-bold text-gray-900 dark:text-gray-100">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600 dark:text-gray-400">Общий вес:</span>
+          <span id="sum-weight" class="font-bold text-gray-900 dark:text-gray-100">0 кг</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600 dark:text-gray-400">Общий объём:</span>
+          <span id="sum-volume" class="font-bold text-gray-900 dark:text-gray-100">0 м³</span>
+        </div>
+        <div class="border-t border-blue-200 dark:border-blue-800 my-2"></div>
+        <div class="flex justify-between">
+          <span class="text-gray-600 dark:text-gray-400">Сумма:</span>
+          <span id="sum-total" class="font-bold text-gray-900 dark:text-gray-100">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600 dark:text-gray-400">Неоплачено:</span>
+          <span id="sum-unpaid" class="font-bold text-red-600 dark:text-red-400">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group form -->
+    <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-4">
+        Шаг 4 — Параметры партии
+      </h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Код партии
+            <span class="text-xs text-gray-400 font-normal ml-1">(авто, можно изменить)</span>
+          </label>
+          <input id="inp-group-code" type="text" value="{{ suggested_code }}"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Начальный статус
+          </label>
+          <select id="inp-status"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {% for value, label in status_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Комментарий
+          </label>
+          <textarea id="inp-comment" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            placeholder="Необязательно..."></textarea>
+        </div>
+
+        <div id="create-error" class="hidden rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-sm text-red-700 dark:text-red-400"></div>
+
+        <button id="btn-create-group" disabled
+          class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <span class="material-symbols-outlined text-lg">add_box</span>
+          Создать партию
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /right -->
+
+</div>
+
+<script>
+  window.BUILDER_CONFIG = {
+    itemsUrl:  '{% url "builder-api-items" %}',
+    createUrl: '{% url "builder-api-create" %}',
+    csrfToken: '{{ csrf_token }}',
+  };
+</script>
+<script src="{% static 'js/group_builder.js' %}"></script>
+{% endblock %}

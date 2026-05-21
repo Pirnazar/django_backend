@@ -1,0 +1,356 @@
+# Russian translations for Ýyldyrym Cargo
+# Generated manually — run: python manage.py compilemessages
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+# accounts/models.py
+msgid "email address"
+msgstr "Email адрес"
+
+msgid "full name"
+msgstr "Полное имя"
+
+msgid "phone number"
+msgstr "Номер телефона"
+
+msgid "staff status"
+msgstr "Статус персонала"
+
+msgid "Designates whether the user can log into this admin site."
+msgstr "Определяет, может ли пользователь входить в административную часть сайта."
+
+msgid "active"
+msgstr "Активен"
+
+msgid "Designates whether this user should be treated as active. Unselect this instead of deleting accounts."
+msgstr "Определяет, должен ли пользователь считаться активным. Снимите флажок вместо удаления аккаунта."
+
+# common/models.py auto-generated field names
+msgid "Created at"
+msgstr "Дата создания"
+
+msgid "Updated at"
+msgstr "Дата обновления"
+
+msgid "Deleted at"
+msgstr "Дата удаления"
+
+msgid "created at"
+msgstr "дата создания"
+
+msgid "updated at"
+msgstr "дата обновления"
+
+msgid "deleted at"
+msgstr "дата удаления"
+
+# Generic field names that appear without verbose_name
+msgid "Item code"
+msgstr "Код груза"
+
+msgid "item code"
+msgstr "код груза"
+
+msgid "Group code"
+msgstr "Код партии"
+
+msgid "group code"
+msgstr "код партии"
+
+msgid "Client code"
+msgstr "Код клиента"
+
+msgid "client code"
+msgstr "код клиента"
+
+msgid "Weight kg"
+msgstr "Вес (кг)"
+
+msgid "weight kg"
+msgstr "вес (кг)"
+
+msgid "Volume m3"
+msgstr "Объём (м³)"
+
+msgid "volume m3"
+msgstr "объём (м³)"
+
+msgid "Total items"
+msgstr "Кол-во грузов"
+
+msgid "total items"
+msgstr "кол-во грузов"
+
+msgid "Total weight kg"
+msgstr "Общий вес (кг)"
+
+msgid "total weight kg"
+msgstr "общий вес (кг)"
+
+msgid "Total volume m3"
+msgstr "Общий объём (м³)"
+
+msgid "total volume m3"
+msgstr "общий объём (м³)"
+
+msgid "Sent to urumqi date"
+msgstr "Отправлен в Урумчи"
+
+msgid "Arrived turkmenistan date"
+msgstr "Прибыл в Туркменистан"
+
+msgid "Place count"
+msgstr "Мест"
+
+msgid "place count"
+msgstr "мест"
+
+msgid "Declared value"
+msgstr "Заявленная стоимость"
+
+msgid "Declared value currency"
+msgstr "Валюта стоимости"
+
+msgid "Calculated price"
+msgstr "Расчётная цена"
+
+msgid "calculated price"
+msgstr "расчётная цена"
+
+msgid "External expenses total"
+msgstr "Доп. расходы итого"
+
+msgid "Total price"
+msgstr "Итого"
+
+msgid "total price"
+msgstr "итого"
+
+msgid "Is fragile"
+msgstr "Хрупкий"
+
+msgid "Has battery"
+msgstr "Содержит батарею"
+
+msgid "Is repacked"
+msgstr "Перепакован"
+
+msgid "Is dangerous"
+msgstr "Опасный"
+
+msgid "Requires manual review"
+msgstr "Требует проверки"
+
+msgid "Valid from"
+msgstr "Действует с"
+
+msgid "valid from"
+msgstr "действует с"
+
+msgid "Valid to"
+msgstr "Действует до"
+
+msgid "valid to"
+msgstr "действует до"
+
+msgid "Priority"
+msgstr "Приоритет"
+
+msgid "priority"
+msgstr "приоритет"
+
+msgid "Min charge"
+msgstr "Мин. сумма"
+
+msgid "min charge"
+msgstr "мин. сумма"
+
+msgid "Price per kg"
+msgstr "Цена за кг"
+
+msgid "price per kg"
+msgstr "цена за кг"
+
+msgid "Price per m3"
+msgstr "Цена за м³"
+
+msgid "price per m3"
+msgstr "цена за м³"
+
+msgid "Fixed price"
+msgstr "Фикс. цена"
+
+msgid "fixed price"
+msgstr "фикс. цена"
+
+msgid "Extra description"
+msgstr "Дополнительное описание"
+
+msgid "Entity type"
+msgstr "Тип объекта"
+
+msgid "entity type"
+msgstr "тип объекта"
+
+msgid "Entity id"
+msgstr "ID объекта"
+
+msgid "entity id"
+msgstr "id объекта"
+
+msgid "Actor"
+msgstr "Пользователь"
+
+msgid "actor"
+msgstr "пользователь"
+
+msgid "Ip address"
+msgstr "IP-адрес"
+
+msgid "ip address"
+msgstr "IP-адрес"
+
+msgid "User agent"
+msgstr "User Agent"
+
+msgid "user agent"
+msgstr "user agent"
+
+msgid "Paid at"
+msgstr "Дата оплаты"
+
+msgid "paid at"
+msgstr "дата оплаты"
+
+msgid "Reference number"
+msgstr "Номер ссылки"
+
+msgid "Country name"
+msgstr "Страна"
+
+msgid "country name"
+msgstr "страна"
+
+msgid "Default destination"
+msgstr "Направление по умолчанию"
+
+msgid "default destination"
+msgstr "направление по умолчанию"
+
+msgid "Profile photo"
+msgstr "Фото профиля"
+
+msgid "Notes"
+msgstr "Заметки"
+
+msgid "Is active"
+msgstr "Активен"
+
+msgid "is active"
+msgstr "активен"
+
+msgid "Last login"
+msgstr "Последний вход"
+
+msgid "last login"
+msgstr "последний вход"
+
+msgid "China to urumqi cost"
+msgstr "Стоимость Китай→Урумчи"
+
+msgid "China to turkmenistan cost"
+msgstr "Стоимость Китай→ТМ"
+
+msgid "Arrived urumqi date"
+msgstr "Прибыл в Урумчи"
+
+msgid "Sent to turkmenistan date"
+msgstr "Отправлен в ТМ"
+
+msgid "Comment"
+msgstr "Комментарий"
+
+msgid "comment"
+msgstr "комментарий"
+
+msgid "Description"
+msgstr "Описание"
+
+msgid "description"
+msgstr "описание"
+
+msgid "Barcode"
+msgstr "Штрихкод"
+
+msgid "barcode"
+msgstr "штрихкод"
+
+msgid "Qr code"
+msgstr "QR-код"
+
+msgid "qr code"
+msgstr "QR-код"
+
+msgid "Express code"
+msgstr "Экспресс-код"
+
+msgid "express code"
+msgstr "экспресс-код"
+
+msgid "Code"
+msgstr "Код"
+
+msgid "code"
+msgstr "код"
+
+msgid "Name"
+msgstr "Название"
+
+msgid "name"
+msgstr "название"
+
+msgid "Country"
+msgstr "Страна"
+
+msgid "country"
+msgstr "страна"
+
+msgid "City"
+msgstr "Город"
+
+msgid "city"
+msgstr "город"
+
+msgid "Address"
+msgstr "Адрес"
+
+msgid "address"
+msgstr "адрес"
+
+msgid "Currency"
+msgstr "Валюта"
+
+msgid "currency"
+msgstr "валюта"
+
+msgid "Amount"
+msgstr "Сумма"
+
+msgid "amount"
+msgstr "сумма"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "status"
+msgstr "статус"
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "method"
+msgstr "метод"

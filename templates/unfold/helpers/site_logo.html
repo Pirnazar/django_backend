@@ -1,0 +1,14 @@
+{% load i18n %}
+
+<a href="{% url 'admin:index' %}" class="flex items-center gap-3 overflow-hidden">
+    {% if site_logo.light and site_logo.dark %}
+        <img src="{{ site_logo.dark }}" alt="{{ site_header }}" class="h-8 hidden dark:block flex-shrink-0"/>
+        <img src="{{ site_logo.light }}" alt="{{ site_header }}" class="block h-8 dark:hidden flex-shrink-0" />
+    {% else %}
+        <img src="{{ site_logo }}" class="h-8 flex-shrink-0" alt="{{ site_header }}" />
+    {% endif %}
+    
+    <span class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
+        {{ site_header }}
+    </span>
+</a>

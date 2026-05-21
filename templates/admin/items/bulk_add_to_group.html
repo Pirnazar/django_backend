@@ -1,0 +1,89 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Добавить грузы в партию{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-3 mb-6">
+  <span class="material-symbols-outlined text-3xl text-blue-600">local_shipping</span>
+  <h1 class="text-2xl font-bold">Добавить грузы в партию</h1>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {% for item in items %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ item.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="action_add_to_group">
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Selected items -->
+    <div class="lg:col-span-2">
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <span class="font-semibold text-sm uppercase tracking-wide text-gray-600 dark:text-gray-400">
+            Выбранные грузы ({{ items|length }})
+          </span>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Код груза</th>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Клиент</th>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Направление</th>
+              <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-400">Склад</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            {% for item in items %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-2"><span class="cg-code">{{ item.item_code }}</span></td>
+              <td class="px-4 py-2 text-gray-700 dark:text-gray-300">{{ item.client.full_name }}</td>
+              <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ item.destination.code }}</td>
+              <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ item.warehouse.code }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Group selection -->
+    <div>
+      <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 p-5">
+        <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-4">Выберите партию</h3>
+
+        {% if groups %}
+        <div class="space-y-2 mb-5 max-h-64 overflow-y-auto">
+          {% for group in groups %}
+          <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-blue-400 transition-colors">
+            <input type="radio" name="group_id" value="{{ group.pk }}" class="mt-0.5">
+            <div>
+              <div class="font-mono text-sm font-semibold text-blue-700 dark:text-blue-300">{{ group.group_code }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">{{ group.destination.code }} / {{ group.warehouse.code }} · {{ group.get_status_display }}</div>
+              <div class="text-xs text-gray-400">Грузов: {{ group.total_items }}</div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 mb-4">
+          Нет совместимых партий. Создайте партию с таким же направлением и складом.
+        </p>
+        {% endif %}
+
+        <div class="flex gap-3">
+          <button type="submit" name="apply" value="1"
+            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors {% if not groups %}opacity-50 pointer-events-none{% endif %}">
+            Добавить в партию
+          </button>
+          <a href="#" onclick="history.back(); return false;"
+            class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            Отмена
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

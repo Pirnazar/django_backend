@@ -8,12 +8,26 @@ from .serializers import (
 )
 from apps.common.services import generate_item_code, generate_box_code
 from apps.common.exceptions import TransitionNotAllowed
+from apps.accounts.permissions import IsClientOrStaff
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+    permission_classes = [IsClientOrStaff]
     search_fields = ['item_code', 'barcode', 'express_code', 'client__client_code', 'client__phone_number']
     filterset_fields = ['client', 'destination', 'warehouse', 'shipment_group', 'payment_status', 'delivery_status', 'warehouse_stage']
+
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(self, 'swagger_fake_view', False):
+            return Item.objects.none()
+            
+        if user.role == 'client':
+            if hasattr(user, 'client_profile'):
+                return self.queryset.filter(client=user.client_profile)
+            return self.queryset.none()
+            
+        return self.queryset
 
     def perform_create(self, serializer):
         item_code = generate_item_code()

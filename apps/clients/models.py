@@ -1,9 +1,11 @@
 from django.db import models
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from apps.common.models import TimeStampedSoftDeleteModel
 from apps.locations.models import Destination
 
 class Client(TimeStampedSoftDeleteModel):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='client_profile')
     client_code = models.CharField(max_length=50, unique=True, db_index=True, blank=True)
     full_name = models.CharField(max_length=150)
     phone_number = models.CharField(max_length=20, blank=True, db_index=True)

@@ -4,12 +4,26 @@ from rest_framework.response import Response
 from .models import ShipmentGroup
 from .serializers import ShipmentGroupSerializer
 from apps.common.services import generate_group_code
+from apps.accounts.permissions import IsClientOrStaff
 
 class ShipmentGroupViewSet(viewsets.ModelViewSet):
     queryset = ShipmentGroup.objects.all()
     serializer_class = ShipmentGroupSerializer
+    permission_classes = [IsClientOrStaff]
     search_fields = ['group_code', 'comment']
     filterset_fields = ['destination', 'warehouse', 'status']
+
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(self, 'swagger_fake_view', False):
+            return ShipmentGroup.objects.none()
+            
+        if user.role == 'client':
+            if hasattr(user, 'client_profile'):
+                return self.queryset.filter(items__client=user.client_profile).distinct()
+            return self.queryset.none()
+            
+        return self.queryset
 
     def perform_create(self, serializer):
         group_code = generate_group_code()

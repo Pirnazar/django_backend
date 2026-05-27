@@ -7,6 +7,7 @@ class StaffRole(models.TextChoices):
     MANAGER = 'manager', _('Менеджер')
     OPERATOR = 'operator', _('Оператор')
     WAREHOUSE = 'warehouse', _('Складской сотрудник')
+    CLIENT = 'client', _('Клиент')
 
 class ItemType(models.TextChoices):
     STANDARD = 'standard', _('Стандартный')

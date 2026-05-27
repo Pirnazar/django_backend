@@ -57,7 +57,7 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = (
             'item_code', 'calculated_price', 'external_expenses_total',
-            'total_price', 'payment_status', 'created_at', 'updated_at', 'deleted_at',
+            'total_price', 'payment_status', 'updated_at', 'deleted_at',
             'main_photo'
         )
 

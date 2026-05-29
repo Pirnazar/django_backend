@@ -109,11 +109,6 @@ class VolumeSource(models.TextChoices):
     CALCULATED = 'calculated', _('Рассчитан из габаритов')
     MANUAL = 'manual', _('Введён вручную')
 
-class BoxStatus(models.TextChoices):
-    OPEN = 'open', _('Открыта')
-    CLOSED = 'closed', _('Закрыта')
-    LABELED = 'labeled', _('Этикетка напечатана')
-
 class AttachmentType(models.TextChoices):
     INVOICE = 'invoice', _('Инвойс')
     WAYBILL = 'waybill', _('Накладная')

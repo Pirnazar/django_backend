@@ -3,8 +3,8 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
-from .models import Item, ItemPhoto, Attachment, ItemExpense, ItemStatusHistory, Box
-from apps.common.choices import DeliveryStatus, PaymentStatus, WarehouseStage, BoxStatus
+from .models import Item, ItemPhoto, Attachment, ItemExpense, ItemStatusHistory
+from apps.common.choices import DeliveryStatus, PaymentStatus, WarehouseStage
 from apps.common.admin_helpers import badge, money, photo_preview, RussianLabelsMixin, ITEM_LABELS
 from apps.items.bulk_actions import (
     action_add_to_group, action_change_status,
@@ -358,79 +358,6 @@ class ItemExpenseAdmin(ModelAdmin):
         return obj.created_at.strftime('%d.%m.%Y')
     _created.short_description = _('Дата')
     _created.admin_order_field = 'created_at'
-
-
-_BOX_STATUS = {
-    BoxStatus.OPEN:    ('blue',  'Открыта'),
-    BoxStatus.CLOSED:  ('amber', 'Закрыта'),
-    BoxStatus.LABELED: ('green', 'Этикетка'),
-}
-
-
-class BoxItemInline(TabularInline):
-    model = Item
-    fk_name = 'box'
-    extra = 0
-    fields = ('item_code', 'client', 'weight_kg', 'volume_m3', 'delivery_status')
-    readonly_fields = fields
-    can_delete = False
-    max_num = 0
-    verbose_name = _('Груз')
-    verbose_name_plural = _('Грузы в коробке')
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(Box)
-class BoxAdmin(ModelAdmin):
-    list_display = ('_code', '_barcode', '_dest', '_wh', '_status', '_items', '_weight', '_volume', '_created')
-    list_filter = ('status', 'destination', 'warehouse', 'created_at')
-    search_fields = ('box_code', 'barcode', 'items__item_code', 'items__barcode')
-    readonly_fields = (
-        'box_code', 'total_items', 'total_weight_kg', 'total_volume_m3',
-        'created_at', 'closed_at', 'printed_at', 'created_by', 'closed_by',
-    )
-    autocomplete_fields = ('destination', 'warehouse', 'shipment_group')
-    inlines = [BoxItemInline]
-    ordering = ('-created_at',)
-
-    def _code(self, obj):
-        return format_html('<span class="cg-code">{}</span>', obj.box_code)
-    _code.short_description = _('Код коробки')
-
-    def _barcode(self, obj):
-        return obj.barcode or '—'
-    _barcode.short_description = _('Штрихкод')
-
-    def _dest(self, obj):
-        return obj.destination.code if obj.destination_id else '—'
-    _dest.short_description = _('Направление')
-
-    def _wh(self, obj):
-        return obj.warehouse.code if obj.warehouse_id else '—'
-    _wh.short_description = _('Склад')
-
-    def _status(self, obj):
-        color, label = _BOX_STATUS.get(obj.status, ('gray', obj.status))
-        return badge(label, color)
-    _status.short_description = _('Статус')
-
-    def _items(self, obj):
-        return obj.total_items
-    _items.short_description = _('Грузов')
-
-    def _weight(self, obj):
-        return f'{obj.total_weight_kg} кг'
-    _weight.short_description = _('Вес')
-
-    def _volume(self, obj):
-        return f'{obj.total_volume_m3} м³'
-    _volume.short_description = _('Объём')
-
-    def _created(self, obj):
-        return obj.created_at.strftime('%d.%m.%Y %H:%M') if obj.created_at else '—'
-    _created.short_description = _('Создана')
 
 
 @admin.register(ItemStatusHistory)

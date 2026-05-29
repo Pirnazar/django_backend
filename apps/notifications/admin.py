@@ -4,7 +4,10 @@ from unfold.admin import ModelAdmin
 
 from apps.common.admin_helpers import badge
 
-from .models import Notification, NotificationChannel, NotificationStatus, NotificationType
+from .models import (
+    Notification, NotificationChannel, NotificationStatus, NotificationType,
+    DeviceToken,
+)
 
 
 _CHANNEL_COLORS = {
@@ -98,3 +101,25 @@ class NotificationAdmin(ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+@admin.register(DeviceToken)
+class DeviceTokenAdmin(ModelAdmin):
+    list_display = ('_client', 'push_service', 'platform', '_active', '_token', 'last_seen_at')
+    list_filter = ('push_service', 'platform', 'is_active')
+    search_fields = ('client__client_code', 'client__full_name', 'token')
+    list_select_related = ('client',)
+    readonly_fields = ('created_at', 'updated_at', 'last_seen_at')
+    ordering = ('-created_at',)
+
+    def _client(self, obj):
+        return obj.client.client_code if obj.client_id else '—'
+    _client.short_description = _('Клиент')
+
+    def _active(self, obj):
+        return badge('Активно', 'green') if obj.is_active else badge('Отключено', 'gray')
+    _active.short_description = _('Статус')
+
+    def _token(self, obj):
+        return f'{str(obj.token)[:16]}…'
+    _token.short_description = _('Токен')

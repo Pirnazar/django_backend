@@ -1,12 +1,12 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Item, ItemPhoto, Attachment, ItemExpense, ItemStatusHistory, Box
+from .models import Item, ItemPhoto, Attachment, ItemExpense, ItemStatusHistory
 from .serializers import (
     ItemSerializer, ItemPhotoSerializer, AttachmentSerializer,
-    ItemExpenseSerializer, ItemStatusHistorySerializer, BoxSerializer,
+    ItemExpenseSerializer, ItemStatusHistorySerializer,
 )
-from apps.common.services import generate_item_code, generate_box_code
+from apps.common.services import generate_item_code
 from apps.common.exceptions import TransitionNotAllowed
 from apps.accounts.permissions import IsClientOrStaff
 
@@ -121,87 +121,3 @@ class AttachmentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(uploaded_by=self.request.user)
-
-
-class BoxViewSet(viewsets.ModelViewSet):
-    queryset = Box.objects.prefetch_related('items', 'items__client').select_related(
-        'destination', 'warehouse', 'shipment_group'
-    )
-    serializer_class = BoxSerializer
-    filterset_fields = ['status', 'destination', 'warehouse', 'shipment_group']
-    search_fields = ['box_code', 'barcode']
-
-    def perform_create(self, serializer):
-        box_code = generate_box_code()
-        serializer.save(
-            box_code=box_code,
-            barcode=serializer.validated_data.get('barcode') or box_code,
-            created_by=self.request.user,
-        )
-
-    @action(detail=True, methods=['post'], url_path='scan')
-    def scan(self, request, pk=None):
-        from .services import add_item_to_box, BoxScanError
-        box = self.get_object()
-        barcode = request.data.get('barcode') or request.data.get('code')
-        try:
-            item = add_item_to_box(box, barcode, user=request.user)
-        except BoxScanError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        box.refresh_from_db()
-        return Response({
-            'success': True,
-            'scanned_item': {
-                'id': item.pk,
-                'item_code': item.item_code,
-                'client_code': item.client.client_code if item.client_id else '',
-                'weight_kg': float(item.weight_kg),
-                'volume_m3': float(item.volume_m3),
-            },
-            'box': BoxSerializer(box).data,
-        })
-
-    @action(detail=True, methods=['post'], url_path='close')
-    def close(self, request, pk=None):
-        from .services import close_box, BoxScanError
-        box = self.get_object()
-        try:
-            close_box(box, user=request.user)
-        except BoxScanError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(BoxSerializer(box).data)
-
-    @action(detail=True, methods=['post'], url_path='reopen')
-    def reopen(self, request, pk=None):
-        from apps.common.choices import BoxStatus
-        box = self.get_object()
-        if box.status == BoxStatus.OPEN:
-            return Response({'error': 'Уже открыта.'}, status=status.HTTP_400_BAD_REQUEST)
-        box.status = BoxStatus.OPEN
-        box.closed_at = None
-        box.printed_at = None
-        box.closed_by = None
-        box.save(update_fields=['status', 'closed_at', 'printed_at', 'closed_by'])
-        return Response(BoxSerializer(box).data)
-
-    @action(detail=True, methods=['post'], url_path='remove-item')
-    def remove_item(self, request, pk=None):
-        from .services import recalculate_box_totals
-        box = self.get_object()
-        item_id = request.data.get('item_id')
-        try:
-            item = box.items.get(pk=item_id)
-        except Item.DoesNotExist:
-            return Response({'error': 'Груз не найден в коробке.'}, status=status.HTTP_400_BAD_REQUEST)
-        item.box = None
-        item.save(update_fields=['box', 'updated_by'])
-        recalculate_box_totals(box)
-        box.refresh_from_db()
-        return Response(BoxSerializer(box).data)
-
-    @action(detail=True, methods=['post'], url_path='mark-printed')
-    def mark_printed(self, request, pk=None):
-        from .services import mark_box_printed
-        box = self.get_object()
-        mark_box_printed(box)
-        return Response(BoxSerializer(box).data)

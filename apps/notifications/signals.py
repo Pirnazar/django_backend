@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 def _store_old_delivery_status(sender, instance, **kwargs):
     if instance.pk:
         try:
-            instance._old_delivery_status = sender.objects.get(pk=instance.pk).delivery_status
+            instance._old_delivery_status = (
+                sender.objects.only('delivery_status').get(pk=instance.pk).delivery_status
+            )
         except sender.DoesNotExist:
             instance._old_delivery_status = None
     else:

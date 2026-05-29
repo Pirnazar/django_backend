@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
-from .models import Client
+from .models import Client, AdditionalService, CargoService
 from apps.items.models import Item
 from apps.common.admin_helpers import badge, active_badge, RussianLabelsMixin, CLIENT_LABELS
 
@@ -54,6 +54,9 @@ class ClientAdmin(RussianLabelsMixin, ModelAdmin):
     fieldsets = (
         (_('Основная информация'), {
             'fields': ('client_code', 'full_name', 'phone_number', 'default_destination'),
+        }),
+        (_('Контакты и профиль'), {
+            'fields': ('whatsapp', 'wechat', 'preferred_language', 'delivery_city'),
         }),
         (_('Дополнительно'), {
             'fields': ('profile_photo', 'notes', 'is_active'),
@@ -106,4 +109,66 @@ class ClientAdmin(RussianLabelsMixin, ModelAdmin):
     def _created(self, obj):
         return obj.created_at.strftime('%d.%m.%Y') if obj.created_at else '—'
     _created.short_description = _('Дата создания')
+    _created.admin_order_field = 'created_at'
+
+
+@admin.register(AdditionalService)
+class AdditionalServiceAdmin(ModelAdmin):
+    list_display = ('name', '_price', 'requires_comment', '_active')
+    list_filter = ('is_active', 'currency', 'requires_comment')
+    search_fields = ('name', 'description')
+    ordering = ('name',)
+
+    def _price(self, obj):
+        return f'{obj.price} {obj.currency}'
+    _price.short_description = _('Цена')
+
+    def _active(self, obj):
+        return active_badge(obj.is_active)
+    _active.short_description = _('Активна')
+
+
+_CARGO_SERVICE_STATUS = {
+    'pending':     ('amber',  'Ожидает'),
+    'in_progress': ('blue',   'В работе'),
+    'done':        ('green',  'Выполнено'),
+    'rejected':    ('red',    'Отклонено'),
+    'cancelled':   ('gray',   'Отменено'),
+}
+
+
+@admin.register(CargoService)
+class CargoServiceAdmin(ModelAdmin):
+    list_display = ('_cargo', '_service', '_client', '_status', '_price', '_created')
+    list_filter = ('status', 'currency', 'created_at')
+    search_fields = ('cargo__item_code', 'client__client_code', 'client__full_name', 'service__name')
+    list_select_related = ('cargo', 'client', 'service')
+    autocomplete_fields = ('cargo', 'client', 'service')
+    ordering = ('-created_at',)
+
+    def _cargo(self, obj):
+        return obj.cargo.item_code if obj.cargo_id else '—'
+    _cargo.short_description = _('Груз')
+
+    def _service(self, obj):
+        return obj.service.name if obj.service_id else '—'
+    _service.short_description = _('Услуга')
+
+    def _client(self, obj):
+        return obj.client.client_code if obj.client_id else '—'
+    _client.short_description = _('Клиент')
+
+    def _status(self, obj):
+        color, label = _CARGO_SERVICE_STATUS.get(obj.status, ('gray', obj.status))
+        return badge(label, color)
+    _status.short_description = _('Статус')
+    _status.admin_order_field = 'status'
+
+    def _price(self, obj):
+        return f'{obj.price} {obj.currency}'
+    _price.short_description = _('Цена')
+
+    def _created(self, obj):
+        return obj.created_at.strftime('%d.%m.%Y %H:%M') if obj.created_at else '—'
+    _created.short_description = _('Создано')
     _created.admin_order_field = 'created_at'

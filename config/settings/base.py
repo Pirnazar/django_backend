@@ -225,16 +225,6 @@ UNFOLD = {
                         "icon": "build_circle",
                         "link": "/admin/shipment-group-builder/",
                     },
-                    {
-                        "title": _("Коробки"),
-                        "icon": "package_2",
-                        "link": reverse_lazy("admin:items_box_changelist") if 'reverse_lazy' in globals() else "/admin/items/box/",
-                    },
-                    {
-                        "title": _("Конструктор коробки"),
-                        "icon": "package_2",
-                        "link": "/admin/box-builder/",
-                    },
                 ],
             },
             {

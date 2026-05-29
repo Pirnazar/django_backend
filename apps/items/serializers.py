@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Item, ItemPhoto, Attachment, ItemExpense, ItemStatusHistory, Box
+from .models import Item, ItemPhoto, Attachment, ItemExpense, ItemStatusHistory
 from apps.clients.models import Client
 
 class ItemPhotoSerializer(serializers.ModelSerializer):
@@ -61,46 +61,53 @@ class ItemSerializer(serializers.ModelSerializer):
             'main_photo'
         )
 
+    def _abs(self, url):
+        if not url:
+            return None
+        request = self.context.get('request')
+        if request and not str(url).startswith('http'):
+            return request.build_absolute_uri(url)
+        return url
 
-class BoxItemBriefSerializer(serializers.ModelSerializer):
-    client_code = serializers.CharField(source='client.client_code', read_only=True)
-    client_name = serializers.CharField(source='client.full_name', read_only=True)
+    def to_representation(self, instance):
+        """Expose client/destination/warehouse as nested objects (mobile app contract)."""
+        rep = super().to_representation(instance)
 
-    class Meta:
-        model = Item
-        fields = (
-            'id', 'item_code', 'barcode',
-            'client_code', 'client_name',
-            'weight_kg', 'volume_m3',
-        )
+        if instance.client_id:
+            c = instance.client
+            rep['client'] = {
+                'id': str(c.id),
+                'client_code': c.client_code,
+                'full_name': c.full_name,
+                'phone_number': c.phone_number,
+            }
+        else:
+            rep['client'] = None
 
+        if instance.destination_id:
+            d = instance.destination
+            rep['destination'] = {
+                'id': str(d.id),
+                'code': d.code,
+                'name': d.name,
+                'country_name': d.country_name or '',
+            }
+        else:
+            rep['destination'] = None
 
-class BoxSerializer(serializers.ModelSerializer):
-    items = BoxItemBriefSerializer(many=True, read_only=True)
-    destination_code = serializers.CharField(source='destination.code', read_only=True)
-    warehouse_code = serializers.CharField(source='warehouse.code', read_only=True)
-    print_payload = serializers.SerializerMethodField()
+        if instance.warehouse_id:
+            w = instance.warehouse
+            rep['warehouse'] = {
+                'id': str(w.id),
+                'code': w.code,
+                'name': w.name,
+                'city': w.city,
+                'country': w.country,
+            }
+        else:
+            rep['warehouse'] = None
 
-    class Meta:
-        model = Box
-        fields = (
-            'id', 'box_code', 'barcode', 'status',
-            'destination', 'destination_code',
-            'warehouse', 'warehouse_code',
-            'shipment_group',
-            'total_items', 'total_weight_kg', 'total_volume_m3',
-            'comment',
-            'created_at', 'closed_at', 'printed_at',
-            'created_by', 'closed_by',
-            'items', 'print_payload',
-        )
-        read_only_fields = (
-            'box_code', 'status',
-            'total_items', 'total_weight_kg', 'total_volume_m3',
-            'created_at', 'closed_at', 'printed_at',
-            'created_by', 'closed_by',
-        )
+        for photo in rep.get('photos') or []:
+            photo['image_url'] = self._abs(photo.get('file_url') or photo.get('file'))
 
-    def get_print_payload(self, obj):
-        from .services import box_print_payload
-        return box_print_payload(obj)
+        return rep

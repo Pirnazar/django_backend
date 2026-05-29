@@ -23,20 +23,15 @@ def track_item_shipment_group_removal(sender, instance, **kwargs):
         try:
             old_instance = Item.objects.get(pk=instance.pk)
             instance._old_shipment_group_id = old_instance.shipment_group_id
-            instance._old_box_id = old_instance.box_id
         except Item.DoesNotExist:
             instance._old_shipment_group_id = None
-            instance._old_box_id = None
     else:
         instance._old_shipment_group_id = None
-        instance._old_box_id = None
 
 @receiver(post_save, sender=Item)
 def handle_item_shipment_group_change(sender, instance, created, **kwargs):
     from apps.shipments.services import recalculate_shipment_group_totals
     from apps.shipments.models import ShipmentGroup
-    from apps.items.models import Box
-    from apps.items.services import recalculate_box_totals
 
     new_group_id = instance.shipment_group_id
     old_group_id = getattr(instance, '_old_shipment_group_id', None)
@@ -53,20 +48,6 @@ def handle_item_shipment_group_change(sender, instance, created, **kwargs):
             new_group = ShipmentGroup.objects.get(pk=new_group_id)
             recalculate_shipment_group_totals(new_group)
         except ShipmentGroup.DoesNotExist:
-            pass
-
-    new_box_id = instance.box_id
-    old_box_id = getattr(instance, '_old_box_id', None)
-
-    if old_box_id and old_box_id != new_box_id:
-        try:
-            recalculate_box_totals(Box.objects.get(pk=old_box_id))
-        except Box.DoesNotExist:
-            pass
-    if new_box_id:
-        try:
-            recalculate_box_totals(Box.objects.get(pk=new_box_id))
-        except Box.DoesNotExist:
             pass
 
 @receiver(post_save, sender=ItemPhoto)

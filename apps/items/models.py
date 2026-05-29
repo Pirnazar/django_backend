@@ -9,39 +9,7 @@ from apps.pricing.models import PriceRule
 from apps.common.choices import (
     ItemType, TransportType, PaymentType, PaymentStatus,
     DeliveryStatus, WarehouseStage, ExpenseType, VolumeSource, AttachmentType,
-    BoxStatus,
 )
-
-
-class Box(TimeStampedSoftDeleteModel):
-    box_code = models.CharField(max_length=50, unique=True, db_index=True)
-    barcode = models.CharField(max_length=100, blank=True, db_index=True)
-
-    destination = models.ForeignKey(Destination, on_delete=models.PROTECT, related_name='boxes', null=True, blank=True)
-    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name='boxes', null=True, blank=True)
-    shipment_group = models.ForeignKey(ShipmentGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name='boxes')
-
-    status = models.CharField(max_length=20, choices=BoxStatus.choices, default=BoxStatus.OPEN)
-
-    total_items = models.IntegerField(default=0)
-    total_weight_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    total_volume_m3 = models.DecimalField(max_digits=10, decimal_places=4, default=0.0000)
-
-    comment = models.TextField(blank=True)
-
-    closed_at = models.DateTimeField(null=True, blank=True)
-    printed_at = models.DateTimeField(null=True, blank=True)
-
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='created_boxes', on_delete=models.SET_NULL, null=True)
-    closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='closed_boxes', on_delete=models.SET_NULL, null=True, blank=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = _('Коробка')
-        verbose_name_plural = _('Коробки')
-
-    def __str__(self):
-        return self.box_code
 
 
 class Item(TimeStampedSoftDeleteModel):
@@ -50,7 +18,6 @@ class Item(TimeStampedSoftDeleteModel):
     destination = models.ForeignKey(Destination, on_delete=models.PROTECT, related_name='items')
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name='items')
     shipment_group = models.ForeignKey(ShipmentGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
-    box = models.ForeignKey(Box, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
     price_rule = models.ForeignKey(PriceRule, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
     
     barcode = models.CharField(max_length=100, blank=True, db_index=True)

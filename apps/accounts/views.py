@@ -1,16 +1,44 @@
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
-from .serializers import CustomTokenObtainPairSerializer, StaffUserSerializer, ChangePasswordSerializer
+from .serializers import (
+    CustomTokenObtainPairSerializer, StaffUserSerializer,
+    ChangePasswordSerializer, ClientRegisterSerializer,
+)
 from .permissions import IsAdminOrManager
 
 User = get_user_model()
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class ClientRegisterView(APIView):
+    """POST /api/v1/auth/register/ — self-registration for clients (mobile app)."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ClientRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
+        client = getattr(user, 'client_profile', None)
+        return Response(
+            {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'token_type': 'Bearer',
+                'client_code': client.client_code if client else None,
+                'full_name': user.full_name,
+                'phone_number': user.phone_number,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class AuthViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]

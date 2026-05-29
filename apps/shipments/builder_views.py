@@ -6,13 +6,13 @@ import logging
 from functools import wraps
 
 from django.contrib import admin
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 
-from apps.common.choices import DeliveryStatus, ShipmentGroupStatus, StaffRole
+from apps.common.choices import DeliveryStatus, ShipmentGroupStatus, StaffRole, WarehouseStage
 from apps.common.services import generate_group_code
 from apps.items.models import Item, ItemStatusHistory
 from apps.locations.models import Destination, Warehouse
@@ -107,7 +107,6 @@ class GroupBuilderCreateView(View):
     """POST JSON — creates ShipmentGroup and assigns items."""
 
     @method_decorator(_builder_auth)
-    @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
@@ -154,15 +153,27 @@ class GroupBuilderCreateView(View):
         if not group_code:
             group_code = generate_group_code()
 
-        group = ShipmentGroup.objects.create(
-            group_code=group_code,
-            destination=destination,
-            warehouse=warehouse,
-            status=status,
-            comment=comment,
-            created_by=request.user,
-            updated_by=request.user,
-        )
+        if ShipmentGroup.objects.filter(group_code=group_code).exists():
+            return JsonResponse(
+                {'error': f'Партия с кодом «{group_code}» уже существует'},
+                status=400,
+            )
+
+        try:
+            group = ShipmentGroup.objects.create(
+                group_code=group_code,
+                destination=destination,
+                warehouse=warehouse,
+                status=status,
+                comment=comment,
+                created_by=request.user,
+                updated_by=request.user,
+            )
+        except IntegrityError:
+            return JsonResponse(
+                {'error': f'Партия с кодом «{group_code}» уже существует'},
+                status=400,
+            )
 
         # Bulk-assign items; queryset.update() bypasses signals so we recalculate manually
         items_qs.update(shipment_group=group)
@@ -185,7 +196,7 @@ class GroupBuilderCreateView(View):
             ItemStatusHistory.objects.bulk_create(history_bulk)
             packed_items.update(
                 delivery_status=DeliveryStatus.GROUPED,
-                warehouse_stage='grouped',
+                warehouse_stage=WarehouseStage.GROUPED,
             )
 
         recalculate_shipment_group_totals(group)

@@ -10,10 +10,11 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.utils.translation import gettext_lazy as _
 
-from apps.common.choices import DeliveryStatus
+from apps.common.choices import DeliveryStatus, ShipmentGroupStatus
 from apps.shipments.models import ShipmentGroup
-from apps.common.choices import ShipmentGroupStatus
 from .models import Item, ItemStatusHistory
+
+_VALID_DELIVERY_STATUSES = {value for value, _label in DeliveryStatus.choices}
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,8 @@ def action_add_to_group(modeladmin, request, queryset):
         count = 0
         for item in items:
             item.shipment_group = group
-            item.save(update_fields=['shipment_group', 'updated_by_id'])
+            item.updated_by = request.user
+            item.save(update_fields=['shipment_group', 'updated_by'])
             count += 1
 
         modeladmin.message_user(
@@ -112,19 +114,24 @@ def action_change_status(modeladmin, request, queryset):
             modeladmin.message_user(request, 'Не выбран новый статус.', messages.ERROR)
             return HttpResponseRedirect(request.get_full_path())
 
+        if new_status not in _VALID_DELIVERY_STATUSES:
+            modeladmin.message_user(request, 'Недопустимый статус доставки.', messages.ERROR)
+            return HttpResponseRedirect(request.get_full_path())
+
+        new_label = DeliveryStatus(new_status).label
         ok, errors = [], []
         for item in items:
             allowed = ALLOWED_TRANSITIONS.get(item.delivery_status, [])
             if new_status not in allowed:
                 errors.append(
                     f'{item.item_code}: нельзя перевести из '
-                    f'"{item.get_delivery_status_display()}" → '
-                    f'"{DeliveryStatus(new_status).label}"'
+                    f'"{item.get_delivery_status_display()}" → "{new_label}"'
                 )
                 continue
             old_status = item.delivery_status
             item.delivery_status = new_status
-            item.save(update_fields=['delivery_status', 'updated_by_id'])
+            item.updated_by = request.user
+            item.save(update_fields=['delivery_status', 'updated_by'])
             ItemStatusHistory.objects.create(
                 item=item,
                 old_status=old_status,

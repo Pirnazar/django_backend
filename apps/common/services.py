@@ -23,7 +23,3 @@ def generate_item_code() -> str:
 def generate_group_code() -> str:
     seq = _get_next_sequence('group_code')
     return f"GRP{seq:06d}"
-
-def generate_box_code() -> str:
-    seq = _get_next_sequence('box_code')
-    return f"BOX{seq:06d}"
